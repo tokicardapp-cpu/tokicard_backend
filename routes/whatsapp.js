@@ -4,8 +4,31 @@ import { db } from "../firebase.js";
 
 const router = express.Router();
 
+/* ✅ 1️⃣ Webhook Verification (Required by Meta) */
+router.get("/", (req, res) => {
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN; // must match token in Meta dashboard
+
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode && token) {
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
+      console.log("✅ WhatsApp Webhook verified successfully!");
+      res.status(200).send(challenge);
+    } else {
+      res.sendStatus(403);
+    }
+  } else {
+    res.sendStatus(400);
+  }
+});
+
+/* ✅ 2️⃣ Handle Incoming WhatsApp Messages */
 router.post("/", async (req, res) => {
   try {
+    console.log("📦 Incoming webhook:", JSON.stringify(req.body, null, 2));
+
     const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!message) return res.sendStatus(200);
 
