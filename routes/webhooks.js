@@ -1,5 +1,4 @@
 import express from "express";
-import axios from "axios";
 import { db } from "../firebase.js";
 import { sendMessage } from "../utils/sendMessage.js";
 
@@ -7,7 +6,8 @@ const router = express.Router();
 
 // ✅ WhatsApp webhook verification (required by Meta)
 router.get("/", (req, res) => {
-  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+ const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+ // Must match Meta dashboard
 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -25,56 +25,10 @@ router.get("/", (req, res) => {
   }
 });
 
-// ✅ WhatsApp webhook message receiver + auto-reply
-router.post("/", async (req, res) => {
+// ✅ WhatsApp webhook message receiver
+router.post("/", (req, res) => {
   console.log("📩 WhatsApp webhook event:", JSON.stringify(req.body, null, 2));
-
-  try {
-    const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-    if (message && message.text) {
-      const from = message.from; // sender's WhatsApp number
-      const userText = message.text.body.toLowerCase();
-
-      console.log("💬 Message received from:", from, "→", userText);
-
-      // ✅ Basic reply logic
-      let reply;
-      if (userText.includes("hi") || userText.includes("hello")) {
-        reply = "👋 Hi there! I’m Toki  , your virtual assistant. How can I help you today?";
-      } else if (userText.includes("help")) {
-        reply = "🧾 You can ask me about your card, KYC, or payments. Try typing 'card' or 'kyc'.";
-      } else if (userText.includes("card")) {
-        reply = "💳 Your card service is active! You can type 'kyc' to check verification status.";
-      } else if (userText.includes("kyc")) {
-        reply = "🔍 Your KYC verification is in progress. You’ll get notified once it’s approved.";
-      } else {
-        reply = "🤖 Sorry, I didn’t get that. Type 'help' to see what I can do!";
-      }
-
-      // ✅ Send reply via WhatsApp Cloud API
-      await axios.post(
-        `https://graph.facebook.com/v17.0/${process.env.PHONE_ID}/messages`,
-        {
-          messaging_product: "whatsapp",
-          to: from,
-          text: { body: reply },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("✅ Reply sent successfully to:", from);
-    }
-
-    res.sendStatus(200);
-  } catch (error) {
-    console.error("❌ Error handling webhook:", error.response?.data || error.message);
-    res.sendStatus(500);
-  }
+  res.sendStatus(200);
 });
 
 // ✅ KYC webhook (from Sumsub / IdentityPass)
