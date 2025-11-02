@@ -6,7 +6,7 @@ const router = express.Router();
 
 /* ✅ 1️⃣ Webhook Verification (Required by Meta) */
 router.get("/", (req, res) => {
-  const VERIFY_TOKEN = process.env.VERIFY_TOKEN; // must match token in Meta dashboard
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -32,21 +32,31 @@ router.post("/", async (req, res) => {
     const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!message) return res.sendStatus(200);
 
-    const from = message.from; // User's WhatsApp number
-    const text = message.text?.body?.trim().toLowerCase();
+    const from = message.from;
+
+    // 🧠 Unified handler: Text or Button click
+    const text =
+      message.text?.body?.trim().toLowerCase() ||
+      message.interactive?.button_reply?.title?.toLowerCase() ||
+      "";
 
     console.log("📩 Message received from", from, ":", text);
 
-    // 👋 Greeting
-    if (text === "hi" || text === "hello") {
+    /* 👋 Greeting */
+    if (text === "hi" || text === "hello" || text === "hey") {
       await sendMessage(
         from,
-        "👋 Welcome to *Toki Card*!\n\nI can help you create your USD virtual card, verify KYC, and fund it with crypto or fiat.\n\nType *register* to get started."
+        "👋 Welcome to *Toki Card*! What would you like to do?",
+        [
+          { label: "Register" },
+          { label: "KYC" },
+          { label: "Help" },
+        ]
       );
       return res.sendStatus(200);
     }
 
-    // 📝 Registration
+    /* 📝 Registration */
     if (text === "register") {
       await sendMessage(
         from,
@@ -55,27 +65,22 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // 📧 When user sends an email
+    /* 📧 Handle Email Input */
     if (text.includes("@")) {
       const email = text.trim().toLowerCase();
 
-      // Get waitlist (ordered by timestamp)
       const waitlistSnapshot = await db
         .collection("waitlist")
         .orderBy("timestamp", "asc")
         .get();
 
       const waitlistEntries = waitlistSnapshot.docs.map((doc) => doc.data());
-
-      // Find this user's position in the waitlist
       const userIndex = waitlistEntries.findIndex(
         (entry) => entry.email.toLowerCase() === email
       );
 
-      // Determine if early user (first 500)
       const isEarlyUser = userIndex !== -1 && userIndex < 500;
 
-      // Save user info to "users" collection
       await db.collection("users").doc(from).set({
         phone: from,
         email,
@@ -86,54 +91,63 @@ router.post("/", async (req, res) => {
         createdAt: new Date(),
       });
 
-      // Respond appropriately
       if (isEarlyUser) {
         await sendMessage(
           from,
           `🎉 Welcome back, ${
             waitlistEntries[userIndex].fullName || "Toki user"
-          }!\nYou're among the *first 500 waitlist members* — your Toki Card activation will be *FREE*! 🔥\n\nNow type *kyc* to verify your identity.`
+          }!\nYou're among the *first 500 waitlist members* — your Toki Card activation will be *FREE*! 🔥`,
+          [{ label: "KYC" }]
         );
       } else if (userIndex !== -1) {
         await sendMessage(
           from,
           `✅ Welcome back, ${
             waitlistEntries[userIndex].fullName || "Toki user"
-          }!\nYou're on our waitlist, but outside the first 500. A small $2 activation fee will apply when you get your card.\n\nNow type *kyc* to verify your identity.`
+          }!\nYou're on our waitlist, but outside the first 500. A small $2 activation fee will apply when you get your card.`,
+          [{ label: "KYC" }]
         );
       } else {
         await sendMessage(
           from,
-          "✅ Account created successfully!\n\nNow type *kyc* to verify your identity."
+          "✅ Account created successfully!",
+          [{ label: "KYC" }]
         );
       }
 
       return res.sendStatus(200);
     }
 
-    // 🪪 KYC Link
+    /* 🪪 KYC */
     if (text === "kyc") {
       const kycLink = `https://kyc.tokicard.com/session?user=${from}`;
       await sendMessage(
         from,
-        `🔗 Please complete your KYC verification using the secure link below:\n\n${kycLink}\n\nOnce verified, I’ll activate your Toki Card.`
+        `🔗 Please complete your KYC verification using the secure link below:\n\n${kycLink}\n\nOnce verified, I’ll activate your Toki Card.`,
+        [{ label: "Help" }, { label: "Fund" }]
       );
       return res.sendStatus(200);
     }
 
-    // 🆘 Help Command
+    /* 🆘 Help */
     if (text === "help") {
       await sendMessage(
         from,
-        "📘 *Toki Card Help Menu*\n\n• *register* → Create your account\n• *kyc* → Verify your identity\n• *fund* → Add money to your card\n• *balance* → View your balance\n• *activate* → Activate your card\n\n⚡ Tip: Type the keyword directly, e.g., 'kyc'"
+        "📘 *Toki Card Help Menu*\n\n• *register* → Create your account\n• *kyc* → Verify your identity\n• *fund* → Add money to your card\n• *balance* → View your balance\n• *activate* → Activate your card\n\n⚡ You can type or tap a button below.",
+        [
+          { label: "Register" },
+          { label: "KYC" },
+          { label: "Balance" },
+        ]
       );
       return res.sendStatus(200);
     }
 
-    // 💬 Unrecognized message fallback
+    /* 💬 Unknown Command */
     await sendMessage(
       from,
-      "🤖 Sorry, I didn’t understand that.\nType *help* to see what I can do."
+      "🤖 I didn’t understand that.\nType *help* or tap a button below 👇",
+      [{ label: "Help" }, { label: "Register" }]
     );
 
     res.sendStatus(200);
