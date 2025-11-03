@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
     const tokenizer = new natural.WordTokenizer();
     const tokens = tokenizer.tokenize(text.toLowerCase());
 
-    // 🎯 Intent dictionary
+    // 🎯 Intent dictionary (extended)
     const intents = {
       register: ["register", "signup", "sign up", "create", "join", "get started", "start"],
       kyc: ["kyc", "verify", "verification", "identity", "id", "verify id", "confirm identity"],
@@ -55,7 +55,11 @@ router.post("/", async (req, res) => {
       fund: ["fund", "top up", "deposit", "add money", "recharge", "add funds", "fund wallet"],
       balance: ["balance", "check balance", "how much", "remaining", "wallet balance"],
       help: ["help", "support", "assist", "problem", "contact", "customer care"],
-      about: ["what is toki", "toki card", "about", "who are you", "how does toki work", "toki info"],
+      about: ["what is toki", "toki card", "about", "who are you", "toki info", "tell me about toki"],
+      how: ["how", "how it works", "how does it work", "explain", "working", "how to use", "usage"],
+      security: ["safe", "secure", "trust", "is it safe", "security", "fraud", "scam", "legit"],
+      fees: ["cost", "fee", "price", "charges", "how much", "payment", "subscription", "plan"],
+      features: ["features", "benefits", "why use", "advantages", "good", "special", "functions"],
       referral: ["refer", "invite", "referral", "earn", "share link"],
       crypto: ["crypto", "bitcoin", "usdt", "wallet", "pay with crypto"],
       fiat: ["bank", "transfer", "usd", "fiat", "payment link"]
@@ -80,7 +84,7 @@ router.post("/", async (req, res) => {
         [
           { label: "Register" },
           { label: "KYC" },
-          { label: "Help" }
+          { label: "About" }
         ]
       );
       return res.sendStatus(200);
@@ -139,32 +143,62 @@ router.post("/", async (req, res) => {
     else if (userIntent === "about") {
       await sendMessage(
         from,
-        "🌍 *About Toki Card*\n\n*Toki Card* is a USD virtual card that lets you pay for global services — like Netflix, Spotify, and online subscriptions — using *crypto or local currency*.\n\n✨ With Toki Card, you can:\n• Create a secure USD virtual card\n• Fund with *crypto (USDT, BTC)* or *bank transfer*\n• Enjoy zero monthly fees for early users\n• Get instant KYC verification\n\nType *register* to get started or *help* to see all commands."
+        "🌍 *About Toki Card*\n\n*Toki Card* is a USD virtual card that allows you to make payments globally — for Netflix, Spotify, and online purchases — using *crypto or your local currency*.\n\nIt’s built for Africans who want borderless payments that just work.\n\nWould you like me to explain *how it works*?",
+        [{ label: "How It Works" }, { label: "Features" }]
+      );
+    }
+
+    else if (userIntent === "how") {
+      await sendMessage(
+        from,
+        "⚙️ *How Toki Card Works*\n\n1️⃣ *Register* with your phone number or email.\n2️⃣ *Verify* your identity (KYC) — takes only 2 minutes.\n3️⃣ *Fund* your card using crypto (USDT/BTC) or bank transfer.\n4️⃣ *Use your USD virtual card* to pay anywhere online — Netflix, Amazon, Spotify, and more.\n\nEverything happens right in WhatsApp. 💚",
+        [{ label: "Register" }, { label: "Is it safe?" }]
+      );
+    }
+
+    else if (userIntent === "security") {
+      await sendMessage(
+        from,
+        "🔒 *Security & Trust*\n\nToki Card is powered by secure payment partners that comply with global financial standards (PCI-DSS & KYC/AML).\n\nAll user data is encrypted and your funds are protected with strong banking-grade security.\n\n✅ Verified partners\n✅ Encrypted transactions\n✅ Instant support within WhatsApp"
+      );
+    }
+
+    else if (userIntent === "fees") {
+      await sendMessage(
+        from,
+        "💸 *Toki Card Fees*\n\n• Early users (first 500): *FREE activation*\n• Standard activation: *$2 one-time fee*\n• Funding fees: *0% for crypto*, *1% for fiat transfers*\n• Monthly maintenance: *$0 — no recurring charges*\n\nTransparent, simple, and affordable. 💚"
+      );
+    }
+
+    else if (userIntent === "features") {
+      await sendMessage(
+        from,
+        "✨ *Key Features of Toki Card*\n\n• Instant USD virtual card creation 💳\n• Fund with crypto or local currency 💰\n• No hidden fees 🪙\n• Global acceptance 🌎\n• 24/7 WhatsApp support 💬\n• Early users enjoy lifetime free activation 🔥"
       );
     }
 
     else if (userIntent === "referral") {
       await sendMessage(
         from,
-        "🎁 You can invite friends to Toki Card and earn rewards!\nReferral links will be available soon — stay tuned 👀"
+        "🎁 *Referral Program*\nInvite friends to Toki Card and earn rewards every time they activate their card.\n\nReferral links launching soon — stay tuned! 👀"
       );
     }
 
     else if (userIntent === "crypto") {
       await sendMessage(
         from,
-        "💎 To fund with crypto, use *USDT (TRC20)* or *Bitcoin (BTC)*.\nOnce payment is confirmed, your card balance updates instantly.\n\nWould you like me to send your deposit address?"
+        "💎 *Fund with Crypto*\n\nWe support *USDT (TRC20)* and *Bitcoin (BTC)*.\nOnce payment is confirmed, your Toki Card balance updates instantly.\n\nWould you like me to send your deposit address?"
       );
     }
 
     else if (userIntent === "fiat") {
       await sendMessage(
         from,
-        "🏦 To fund with fiat, send a bank transfer using your personalized Toki Card payment link.\n\nWould you like me to generate your link?"
+        "🏦 *Fund with Bank Transfer*\n\nYou can send funds using your personalized payment link or bank account.\n\nWould you like me to generate your link?"
       );
     }
 
-    /* 📧 Handle Email Input (same as before) */
+    /* 📧 Handle Email Input */
     else if (text.includes("@")) {
       const email = text.trim().toLowerCase();
       const waitlistSnapshot = await db
