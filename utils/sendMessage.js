@@ -7,19 +7,62 @@ const TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_ID = process.env.PHONE_ID;
 
 /**
+ * Simulate WhatsApp "typing" indicator by waiting before sending the message.
+ *
+ * @param {string} to - Recipient’s WhatsApp number
+ * @param {number} duration - Duration to simulate typing (in ms)
+ */
+async function sendTypingIndicator(to, duration = 1500) {
+  try {
+    // 🕐 Send "typing" state to WhatsApp
+    await axios.post(
+      `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to,
+        type: "typing_on", // triggers the "typing" state in chat
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // ⏳ Wait to simulate typing duration
+    await new Promise((resolve) => setTimeout(resolve, duration));
+  } catch (error) {
+    console.error(
+      "⚠️ Typing indicator error:",
+      error.response?.data || error.message
+    );
+  }
+}
+
+/**
  * Sends a WhatsApp message.
- * Automatically detects if it’s plain text or interactive (button) format.
+ * Supports both plain text and interactive (button) formats.
+ * Automatically supports optional typing indicator simulation.
  *
  * @param {string} to - Recipient’s WhatsApp number (e.g. "2347012345678")
- * @param {string} text - Message body content
+ * @param {string} text - Message content
  * @param {Array<{label: string}>} [buttons=[]] - Optional quick reply buttons
+ * @param {boolean} [withTyping=false] - If true, shows typing indicator before sending
+ * @param {number} [typingDuration=1500] - Optional custom typing delay in milliseconds
  */
-export async function sendMessage(to, text, buttons = []) {
+export async function sendMessage(to, text, buttons = [], withTyping = false, typingDuration = 1500) {
   try {
+    // 🟡 Step 1: Simulate typing if requested
+    if (withTyping) {
+      await sendTypingIndicator(to, typingDuration);
+    }
+
+    // 🟢 Step 2: Build payload
     let payload;
 
-    // ✅ Case 1: Interactive button message
     if (buttons.length > 0) {
+      // Interactive button message
       payload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -39,10 +82,8 @@ export async function sendMessage(to, text, buttons = []) {
           },
         },
       };
-    }
-
-    // ✅ Case 2: Simple text message
-    else {
+    } else {
+      // Simple text message
       payload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -52,7 +93,7 @@ export async function sendMessage(to, text, buttons = []) {
       };
     }
 
-    // ✅ Send the message through the WhatsApp Cloud API
+    // 🟢 Step 3: Send the message
     const response = await axios.post(
       `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`,
       payload,
