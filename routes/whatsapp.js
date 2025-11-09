@@ -130,33 +130,11 @@ router.post("/", async (req, res) => {
       );
     }
 
-    /* ✅ Updated Fund Intent (with activation check) */
     else if (userIntent === "fund") {
-      const userRef = db.collection("users").doc(from);
-      const userDoc = await userRef.get();
-
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-
-        if (userData.cardActive) {
-          await sendMessage(
-            from,
-            "💰 You can fund your Toki Card using *crypto (USDT, BTC)* or *fiat (bank transfer)*.\n\nType *crypto* or *fiat* to choose your method."
-          );
-        } else {
-          await sendMessage(
-            from,
-            "⚠️ You need to *activate your Toki Card* before funding it.\n\nPlease complete your *KYC* first by typing *KYC* below 👇",
-            [{ label: "KYC" }, { label: "Help" }]
-          );
-        }
-      } else {
-        await sendMessage(
-          from,
-          "👋 It looks like you haven’t registered yet.\nPlease type *register* to create your Toki Card account first.",
-          [{ label: "Register" }, { label: "About" }]
-        );
-      }
+      await sendMessage(
+        from,
+        "💰 You can fund your Toki Card using *crypto (USDT, BTC)* or *fiat (bank transfer)*.\n\nType *crypto* or *fiat* to choose your method."
+      );
     }
 
     else if (userIntent === "balance") {
@@ -246,6 +224,7 @@ router.post("/", async (req, res) => {
         (entry) => entry.email.toLowerCase() === email
       );
 
+      // ✅ New condition: anyone on the waitlist gets free activation
       const isWaitlisted = userIndex !== -1;
 
       await db.collection("users").doc(from).set({
