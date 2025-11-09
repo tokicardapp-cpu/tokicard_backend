@@ -99,8 +99,8 @@ router.post("/", async (req, res) => {
         from,
         "👋 Welcome to *Toki Card*! What would you like to do?",
         [
-          { label: "Register" },
-          { label: "KYC" },
+          { label: "fund" },
+          { label: "balance" },
           { label: "About" }
         ]
       );
