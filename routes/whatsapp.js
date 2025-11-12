@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
     const tokenizer = new natural.WordTokenizer();
     const tokens = tokenizer.tokenize(text.toLowerCase());
 
-    // 🎯 Intent dictionary
+    // 🎯 Intent dictionary (updated)
     const intents = {
       register: ["register", "signup", "sign up", "create", "join", "get started", "start"],
       kyc: ["kyc", "verify", "verification", "identity", "id", "verify id", "confirm identity"],
@@ -62,7 +62,10 @@ router.post("/", async (req, res) => {
       features: ["features", "benefits", "why use", "advantages", "good", "special", "functions"],
       referral: ["refer", "invite", "referral", "earn", "share link"],
       crypto: ["crypto", "bitcoin", "usdt", "wallet", "pay with crypto"],
-      fiat: ["bank", "transfer", "usd", "fiat", "payment link"]
+      fiat: ["bank", "transfer", "usd", "fiat", "payment link"],
+      // 🆕 Casual conversation intents
+      acknowledge: ["ok", "okay", "alright", "cool", "sure", "thanks", "thank you", "great"],
+      followup: ["how do we go about it", "what next", "continue", "proceed", "go ahead", "then what"]
     };
 
     // 🧩 Smart Intent Detection (Substring + Fuzzy Matching)
@@ -214,6 +217,26 @@ router.post("/", async (req, res) => {
       );
     }
 
+    /* 🆕 Casual conversation responses */
+    else if (userIntent === "acknowledge") {
+      await sendMessage(
+        from,
+        "😊 Got it! If you’d like to continue, you can type *help* to see all options or choose what to do next 👇",
+        [
+          { label: "Fund" },
+          { label: "KYC" },
+          { label: "About" }
+        ]
+      );
+    }
+
+    else if (userIntent === "followup") {
+      await sendMessage(
+        from,
+        "🚀 Sure! Here’s how to continue:\n\nIf you haven’t yet:\n• Type *register* to create your account\n• Type *kyc* to verify your identity\n• Or *fund* to add money to your card 💳"
+      );
+    }
+
     /* 📧 Handle Email Input */
     else if (text.includes("@")) {
       const email = text.trim().toLowerCase();
@@ -224,7 +247,6 @@ router.post("/", async (req, res) => {
         (entry) => entry.email.toLowerCase() === email
       );
 
-      // ✅ New condition: anyone on the waitlist gets free activation
       const isWaitlisted = userIndex !== -1;
 
       await db.collection("users").doc(from).set({
