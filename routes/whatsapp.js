@@ -126,46 +126,50 @@ router.post("/", async (req, res) => {
     /* ----------------------------------------------------------------------
        ⭐⭐⭐ CARD DETAILS — 2 MESSAGES (NO SPACES IN CARD NUMBER)
     ---------------------------------------------------------------------- */
-    if (userIntent === "card") {
-      const ref = db.collection("users").doc(from);
-      const doc = await ref.get();
+  /* ----------------------------------------------------------------------
+   ⭐⭐⭐ CARD DETAILS — 2 MESSAGES — NO SPACES IN CARD NUMBER
+---------------------------------------------------------------------- */
+if (userIntent === "card") {
+  const ref = db.collection("users").doc(from);
+  const doc = await ref.get();
 
-      if (!doc.exists) {
-        await sendMessage(
-          from,
-          "⚠️ Please *register first* before viewing your card.",
-          [{ label: "Register" }]
-        );
-        return res.sendStatus(200);
-      }
+  if (!doc.exists) {
+    await sendMessage(
+      from,
+      "⚠️ Please *register first* before viewing your card.",
+      [{ label: "Register" }]
+    );
+    return res.sendStatus(200);
+  }
 
-      let card = doc.data().card;
+  let card = doc.data().card;
 
-      if (!card) {
-        card = generateCard();
-        await ref.update({ card });
-      }
+  if (!card) {
+    card = generateCard();
+    await ref.update({ card });
+  }
 
-      // FIRST MESSAGE
-      await sendMessage(
-        from,
-        `💳 *Your Toki USD Virtual Card*\n\n` +
-          `▪️ *Expiry:* ${card.expiry}\n` +
-          `▪️ *CVV:* ${card.cvv}\n` +
-          `▪️ *Billing Address:* ${card.billingAddress}\n\n` +
-          `👉 Your *card number* will follow next.`,
-        [{ label: "Fund" }, { label: "Help" }]
-      );
+  // FIRST MESSAGE
+  await sendMessage(
+    from,
+    `💳 *Your Toki USD Virtual Card*\n\n` +
+      `▪️ *Expiry:* ${card.expiry}\n` +
+      `▪️ *CVV:* ${card.cvv}\n` +
+      `▪️ *Billing Address:* ${card.billingAddress}\n\n` +
+      `👉 Your *card number* will follow next.`,
+    [{ label: "Fund" }, { label: "Help" }]
+  );
 
-      // SECOND MESSAGE — ONLY CARD NUMBER (no spaces)
-      await sendMessage(
-        from,
-        `🔢 *Card Number*\n${card.number}\n\n👉 Tap & hold to copy.`,
-        []
-      );
+  // SECOND MESSAGE — Code block prevents auto spacing
+  await sendMessage(
+    from,
+    `🔢 *Card Number*\n\`\`\`\n${card.number}\n\`\`\`\n👉 Tap & hold to copy.`,
+    []
+  );
 
-      return res.sendStatus(200);
-    }
+  return res.sendStatus(200);
+}
+
 
     /* --------------------------- EXISTING INTENTS --------------------------- */
 
