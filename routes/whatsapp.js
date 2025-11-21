@@ -172,7 +172,7 @@ router.post("/", async (req, res) => {
     }
 
     if (userIntent === "kyc") {
-      const kyc = `https://kyc.tokicard.com/session?user=${from}`;
+      const kyc = `https://tokicard-onboardingform.onrender.com/session?user=${from}`;
       await sendMessage(from, `Complete your KYC:\n${kyc}`, [{ label: "Fund" }]);
       return res.sendStatus(200);
     }
