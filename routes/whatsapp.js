@@ -57,9 +57,8 @@ router.post("/", async (req, res) => {
 
     /* ----------------------------- INTENTS ----------------------------- */
     const intents = {
-      register: ["register", "signup", "sign up", "create account", "start", "open registration", "registration"],
+      register: ["activate card", "activate", "register", "signup", "sign up", "create account", "start", "open registration", "registration"],
       kyc: ["kyc", "verify", "identity", "verification", "id verification"],
-      activate: ["activate", "activate card"],
       fund: ["fund", "top up", "deposit", "add money", "recharge"],
       balance: ["balance", "wallet", "check balance", "my balance"],
       help: ["help", "support", "assist", "commands"],
@@ -116,7 +115,7 @@ router.post("/", async (req, res) => {
     // Only match greetings if it's JUST a greeting (not a button)
     if (!isButton && !userIntent && /^(hi|hello|hey|greetings|good morning|good evening)$/i.test(text)) {
       await sendMessage(from, "Welcome to *Toki Card*! 👋\n\nWhat would you like to do?", [
-        { label: "Register" }, { label: "Fund" }, { label: "Help" }
+        { label: "Activate Card" }, { label: "Fund" }, { label: "Help" }
       ]);
       return res.sendStatus(200);
     }
@@ -124,7 +123,7 @@ router.post("/", async (req, res) => {
     /* --------------------- CARD DETAILS — 2 MESSAGES --------------------- */
     if (userIntent === "card") {
       if (!user) {
-        await sendMessage(from, "Please *register first* before viewing your card.", [{ label: "Register" }]);
+        await sendMessage(from, "Please *activate your card first* before viewing it.", [{ label: "Activate Card" }]);
         return res.sendStatus(200);
       }
       
@@ -150,10 +149,10 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    /* --------------------------- REGISTER --------------------------- */
+    /* --------------------------- ACTIVATE CARD (REGISTER) --------------------------- */
     if (userIntent === "register") {
       const link = `${WEBAPP}/?phone=${from}`;
-      await sendMessage(from, `🚀 *Start your registration here:*\n\n${link}\n\nComplete the form to create your Toki Card account.`, [
+      await sendMessage(from, `🚀 *Activate your Toki Card:*\n\n${link}\n\nComplete the form to activate your card.`, [
         { label: "KYC" }, { label: "Help" }
       ]);
       return res.sendStatus(200);
@@ -171,7 +170,7 @@ router.post("/", async (req, res) => {
     /* --------------------------- FUND --------------------------- */
     if (userIntent === "fund") {
       if (!user) {
-        await sendMessage(from, "Please *register first* before funding.", [{ label: "Register" }]);
+        await sendMessage(from, "Please *activate your card first* before funding.", [{ label: "Activate Card" }]);
         return res.sendStatus(200);
       }
       if (!user?.kycBasicCompleted) {
@@ -211,7 +210,7 @@ router.post("/", async (req, res) => {
     /* --------------------------- BALANCE --------------------------- */
     if (userIntent === "balance") {
       if (!user) {
-        await sendMessage(from, "Please *register first* to check your balance.", [{ label: "Register" }]);
+        await sendMessage(from, "Please *activate your card first* to check your balance.", [{ label: "Activate Card" }]);
         return res.sendStatus(200);
       }
       const balance = user.balance || 0;
@@ -228,7 +227,7 @@ router.post("/", async (req, res) => {
       await sendMessage(from, 
         `🤖 *Toki Card Bot - Commands*\n\n` +
         `*Getting Started:*\n` +
-        `• Register - Create your account\n` +
+        `• Activate Card - Create your account\n` +
         `• KYC - Verify your identity\n\n` +
         `*Card Management:*\n` +
         `• Fund - Add money to your card\n` +
@@ -238,7 +237,7 @@ router.post("/", async (req, res) => {
         `• About - Learn about Toki Card\n` +
         `• Features - See what we offer\n\n` +
         `Just type any command or click a button!`,
-        [{ label: "Register" }, { label: "About" }]
+        [{ label: "Activate Card" }, { label: "About" }]
       );
       return res.sendStatus(200);
     }
@@ -253,7 +252,7 @@ router.post("/", async (req, res) => {
         `✅ Instant card creation\n` +
         `✅ Secure & reliable\n\n` +
         `Ready to get started?`,
-        [{ label: "Register" }, { label: "Features" }]
+        [{ label: "Activate Card" }, { label: "Features" }]
       );
       return res.sendStatus(200);
     }
@@ -269,7 +268,7 @@ router.post("/", async (req, res) => {
         `💳 Virtual Card\n` +
         `📱 Easy Management\n\n` +
         `Get your card today!`,
-        [{ label: "Register" }, { label: "Help" }]
+        [{ label: "Activate Card" }, { label: "Help" }]
       );
       return res.sendStatus(200);
     }
@@ -286,7 +285,7 @@ router.post("/", async (req, res) => {
     await sendMessage(from, 
       `🤔 I didn't understand that.\n\n` +
       `Type *help* to see what I can do, or click a button below.`, 
-      [{ label: "Help" }, { label: "Register" }, { label: "Fund" }]
+      [{ label: "Help" }, { label: "Activate Card" }, { label: "Fund" }]
     );
     return res.sendStatus(200);
 
