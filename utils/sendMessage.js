@@ -1,4 +1,4 @@
-// utils/sendMessage.js → FINAL FIXED VERSION (WORKS WITH LATEST BOT)
+// utils/sendMessage.js → FINAL PRODUCTION VERSION
 import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
@@ -30,9 +30,15 @@ async function sendTypingIndicator(to, duration = 1500) {
 }
 
 /**
- * Main sendMessage — sends text OR buttons
+ * Send WhatsApp message with optional buttons & typing indicator
  */
-export async function sendMessage(to, text, buttons = [], withTyping = true, typingDuration = 1200) {
+export async function sendMessage(
+  to,
+  text,
+  buttons = [],
+  withTyping = true,        // ← I changed default to true — feels more human
+  typingDuration = 1200
+) {
   try {
     if (withTyping) {
       await sendTypingIndicator(to, typingDuration);
@@ -41,6 +47,7 @@ export async function sendMessage(to, text, buttons = [], withTyping = true, typ
     let payload;
 
     if (buttons.length > 0) {
+      // Interactive buttons
       payload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -53,14 +60,15 @@ export async function sendMessage(to, text, buttons = [], withTyping = true, typ
             buttons: buttons.slice(0, 3).map((btn, i) => ({
               type: "reply",
               reply: {
-                id: btn.id || `btn_${i + 1}`,
-                title: btn.title.substring(0, 20),
+                id: `btn_${i + 1}`,
+                title: btn.label.substring(0, 20), // WhatsApp max 20 chars
               },
             })),
           },
         },
       };
     } else {
+      // Plain text
       payload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -84,14 +92,13 @@ export async function sendMessage(to, text, buttons = [], withTyping = true, typ
     console.log(`Message sent to ${to}`);
     return response.data;
   } catch (error) {
-    console.error("Failed to send WhatsApp message:", error.response?.data || error.message);
+    console.error(
+      "Failed to send WhatsApp message:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 }
 
-/**
- * NEW: sendButtons — for cleaner imports in whatsapp.js
- */
-export async function sendButtons(to, bodyText, buttons) {
-  return await sendMessage(to, bodyText, buttons);
-}
+// Optional: Add sendList if you want dropdown menus later
+// export async function sendList(...) { ... }
