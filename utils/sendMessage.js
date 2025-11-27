@@ -1,4 +1,4 @@
-// utils/sendMessage.js - WITH FLOW SUPPORT
+// utils/sendMessage.js - WITH FLOW SUPPORT AND BETTER ERROR LOGGING
 import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
@@ -20,8 +20,7 @@ async function sendTypingIndicator(to, duration = 1500) {
 }
 
 /**
- * NEW: Send WhatsApp Flow (opens inside WhatsApp!)
- * This is the REAL solution for in-app opening
+ * Send WhatsApp Flow (opens inside WhatsApp!)
  */
 export async function sendRegistrationFlow(to) {
   try {
@@ -50,7 +49,7 @@ export async function sendRegistrationFlow(to) {
             parameters: {
               flow_message_version: "3",
               flow_token: `flow_${to}_${Date.now()}`,
-              flow_id: "1465176101209831", // Your Flow ID
+              flow_id: "1465176101209831",
               flow_cta: "Start Registration",
               flow_action: "navigate",
               flow_action_payload: {
@@ -74,64 +73,17 @@ export async function sendRegistrationFlow(to) {
     console.log("✅ Flow sent successfully to", to);
     return response.data;
   } catch (error) {
-    console.error("❌ Error sending Flow:", error.response?.data || error.message);
+    // Detailed error logging
+    console.error("❌ Error sending Flow:");
+    console.error("Status:", error.response?.status);
+    console.error("Error data:", JSON.stringify(error.response?.data, null, 2));
+    console.error("Message:", error.message);
     throw error;
   }
 }
 
 /**
- * SOLUTION 1: Use Template Message with URL Button
- * This opens in WhatsApp's in-app browser on most devices
- * NOTE: Requires approved template in Meta Business Manager
- */
-export async function sendTemplateWithURL(to, templateName, languageCode = "en") {
-  try {
-    const payload = {
-      messaging_product: "whatsapp",
-      to,
-      type: "template",
-      template: {
-        name: templateName,
-        language: {
-          code: languageCode
-        },
-        components: [
-          {
-            type: "button",
-            sub_type: "url",
-            index: 0,
-            parameters: [
-              {
-                type: "text",
-                text: to
-              }
-            ]
-          }
-        ]
-      }
-    };
-
-    const response = await axios.post(
-      `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    console.log(`✅ Template message sent to ${to}`);
-    return response.data;
-  } catch (error) {
-    console.error("❌ Failed to send template:", error.response?.data || error.message);
-    throw error;
-  }
-}
-
-/**
- * SOLUTION 2: Modified CTA URL with proper headers
+ * Modified CTA URL with proper headers
  */
 export async function sendCTAWithInAppHint(to, text, url, buttonText) {
   try {
@@ -183,7 +135,7 @@ export async function sendCTAWithInAppHint(to, text, url, buttonText) {
   }
 }
 
-// Keep existing sendMessage as fallback
+// Main sendMessage function
 export async function sendMessage(
   to,
   text,
