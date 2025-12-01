@@ -149,9 +149,9 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    /* --------------------------- ACTIVATE CARD (REGISTER) - UPDATED WITH TEMPLATE --------------------------- */
+    /* --------------------------- ACTIVATE CARD (REGISTER) - UPDATED WITH UTILITY TEMPLATE --------------------------- */
     if (userIntent === "register") {
-      // Use approved template message - opens in WhatsApp in-app browser!
+      // Use UTILITY template (no marketing popup, better in-app opening)
       await sendTemplateWithURL(from, "activate_your_tokicard", "en_US");
       return res.sendStatus(200);
     }
