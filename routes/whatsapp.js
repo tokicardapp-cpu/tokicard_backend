@@ -1,7 +1,7 @@
-// routes/whatsapp.js → UPDATED WITH TEMPLATE MESSAGE
+// routes/whatsapp.js → UPDATED WITH SIMPLE CTA URL BUTTON
 import express from "express";
 import axios from "axios";
-import { sendMessage, sendTemplateWithURL } from "../utils/sendMessage.js";
+import { sendMessage, sendMessageWithButtons } from "../utils/sendMessage.js";
 const router = express.Router();
 
 const API_BASE = "https://tokicard-api.onrender.com/auth";
@@ -41,7 +41,7 @@ router.post("/", async (req, res) => {
       text = message.text.body.trim().toLowerCase();
     } else if (message.interactive?.button_reply?.title) {
       text = message.interactive.button_reply.title.toLowerCase();
-      isButton = true; // Flag that this came from a button
+      isButton = true;
     } else if (message.interactive?.list_reply?.title) {
       text = message.interactive.list_reply.title.toLowerCase();
       isButton = true;
@@ -49,7 +49,6 @@ router.post("/", async (req, res) => {
     
     console.log("Message from", from, ":", text, isButton ? "(button)" : "(text)");
     
-    // Early return if no text
     if (!text) {
       console.log("No text content found in message");
       return res.sendStatus(200);
@@ -75,10 +74,9 @@ router.post("/", async (req, res) => {
       followup: ["what next", "continue", "next", "then", "what now"]
     };
 
-    // FIXED: Check for exact matches first (for buttons)
+    // Check for exact matches first (for buttons)
     let userIntent = null;
     
-    // First, try exact match (important for buttons)
     for (const [intent, list] of Object.entries(intents)) {
       if (list.includes(text)) {
         userIntent = intent;
@@ -87,7 +85,7 @@ router.post("/", async (req, res) => {
       }
     }
     
-    // If no exact match, try partial match (for natural language)
+    // If no exact match, try partial match
     if (!userIntent) {
       for (const [intent, list] of Object.entries(intents)) {
         if (list.some(kw => text.includes(kw))) {
@@ -111,10 +109,9 @@ router.post("/", async (req, res) => {
       user = null;
     }
 
-    /* ------------------------------ GREETING (More Specific) ------------------------------ */
-    // Only match greetings if it's JUST a greeting (not a button)
+    /* ------------------------------ GREETING ------------------------------ */
     if (!isButton && !userIntent && /^(hi|hello|hey|greetings|good morning|good evening)$/i.test(text)) {
-      await sendMessage(from, "Welcome to *Toki Card*! 👋\n\nWhat would you like to do?", [
+      await sendMessageWithButtons(from, "Welcome to *Toki Card*! 👋\n\nWhat would you like to do?", [
         { label: "Activate Card" }, { label: "Fund" }, { label: "Help" }
       ]);
       return res.sendStatus(200);
@@ -123,68 +120,75 @@ router.post("/", async (req, res) => {
     /* --------------------- CARD DETAILS — 2 MESSAGES --------------------- */
     if (userIntent === "card") {
       if (!user) {
-        await sendMessage(from, "Please *activate your card first* before viewing it.", [{ label: "Activate Card" }]);
+        await sendMessageWithButtons(from, "Please *activate your card first* before viewing it.", [
+          { label: "Activate Card" }
+        ]);
         return res.sendStatus(200);
       }
       
       if (!user.card?.number) {
-        await sendMessage(from, "Your card is not ready yet. Please complete funding or try again later.", [
+        await sendMessageWithButtons(from, "Your card is not ready yet. Please complete funding or try again later.", [
           { label: "Fund" }, { label: "Help" }
         ]);
         return res.sendStatus(200);
       }
       
       const card = user.card;
-      await sendMessage(from,
+      await sendMessageWithButtons(from,
         `*Your Toki USD Virtual Card* 💳\n\n` +
         `• *Expiry:* ${card.expiry}\n` +
         `• *CVV:* ${card.cvv}\n\n` +
         `Your card number is below ⬇️`,
         [{ label: "Fund" }, { label: "Help" }]
       );
-      await sendMessage(from,
-        `*Card Number:*\n\`${card.number}\`\n\n_Tap & hold to copy_`,
-        []
-      );
+      await sendMessage(from, `*Card Number:*\n\`${card.number}\`\n\n_Tap & hold to copy_`);
       return res.sendStatus(200);
     }
 
-    /* --------------------------- ACTIVATE CARD (REGISTER) - UPDATED WITH UTILITY TEMPLATE --------------------------- */
+    /* --------------------------- ACTIVATE CARD (REGISTER) - WITH CTA URL BUTTON --------------------------- */
     if (userIntent === "register") {
-      // Use UTILITY template (no marketing popup, better in-app opening)
-      await sendTemplateWithURL(from, "activate_your_tokicard", "en_US");
+      // Send message with "Activate Card" button that opens your website
+      const activationUrl = `https://tokicard-onboardingform.onrender.com/emailform`;
+      await sendMessage(
+        from,
+        `🎉 *Welcome to Toki Card!*\n\nYour virtual USD card for seamless global payments.\n\n` +
+        `✅ Fund with crypto (USDT, BTC)\n` +
+        `✅ Spend anywhere online\n` +
+        `✅ Instant card creation\n\n` +
+        `Click below to activate your card now! 👇`,
+        activationUrl,
+        "Activate Card" // Button text
+      );
       return res.sendStatus(200);
     }
 
     /* --------------------------- KYC --------------------------- */
     if (userIntent === "kyc") {
-      const kyc = `${WEBAPP}/?phone=${from}`;
-      // Send with URL button
+      const kycUrl = `https://tokicard-onboardingform.onrender.com/kycBasic`;
       await sendMessage(
-        from, 
-        `📋 *Complete your KYC verification*\n\nThis is required before you can fund your card.`, 
-        [], 
-        true, 
-        1200,
-        { text: "Start KYC Verification", url: kyc }
+        from,
+        `📋 *Complete your KYC verification*\n\nThis is required before you can fund your card.`,
+        kycUrl,
+        "Start KYC" // Button text
       );
-      await sendMessage(from, "After KYC:", [
-        { label: "Fund" }, { label: "Help" }
-      ], false);
       return res.sendStatus(200);
     }
 
     /* --------------------------- FUND --------------------------- */
     if (userIntent === "fund") {
       if (!user) {
-        await sendMessage(from, "Please *activate your card first* before funding.", [{ label: "Activate Card" }]);
+        await sendMessageWithButtons(from, "Please *activate your card first* before funding.", [
+          { label: "Activate Card" }
+        ]);
         return res.sendStatus(200);
       }
       if (!user?.kycBasicCompleted) {
-        await sendMessage(from, "⚠️ You must complete *KYC verification* first before funding.", [{ label: "KYC" }]);
+        await sendMessageWithButtons(from, "⚠️ You must complete *KYC verification* first before funding.", [
+          { label: "KYC" }
+        ]);
         return res.sendStatus(200);
       }
-      await sendMessage(from, "💳 *Choose your funding method:*", [
+      await sendMessageWithButtons(from, "💳 *Choose your funding method:*", [
         { label: "Crypto" }, { label: "Fiat" }
       ]);
       return res.sendStatus(200);
@@ -192,7 +196,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- CRYPTO --------------------------- */
     if (userIntent === "crypto") {
-      await sendMessage(from, 
+      await sendMessageWithButtons(from, 
         `₿ *Crypto Funding*\n\n` +
         `We support:\n` +
         `• USDT (TRC20)\n` +
@@ -205,7 +209,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- FIAT --------------------------- */
     if (userIntent === "fiat") {
-      await sendMessage(from, 
+      await sendMessageWithButtons(from, 
         `🏦 *Bank Transfer*\n\n` +
         `Bank transfer funding is coming soon. Stay tuned!\n\n` +
         `In the meantime, you can fund with crypto.`, 
@@ -217,11 +221,13 @@ router.post("/", async (req, res) => {
     /* --------------------------- BALANCE --------------------------- */
     if (userIntent === "balance") {
       if (!user) {
-        await sendMessage(from, "Please *activate your card first* to check your balance.", [{ label: "Activate Card" }]);
+        await sendMessageWithButtons(from, "Please *activate your card first* to check your balance.", [
+          { label: "Activate Card" }
+        ]);
         return res.sendStatus(200);
       }
       const balance = user.balance || 0;
-      await sendMessage(from, 
+      await sendMessageWithButtons(from, 
         `💰 *Your Balance*\n\n$${balance.toFixed(2)} USD\n\n` +
         `${balance < 10 ? "Low balance. Consider funding your account!" : ""}`,
         [{ label: "Fund" }, { label: "Show Card" }]
@@ -231,7 +237,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- HELP --------------------------- */
     if (userIntent === "help") {
-      await sendMessage(from, 
+      await sendMessageWithButtons(from, 
         `🤖 *Toki Card Bot - Commands*\n\n` +
         `*Getting Started:*\n` +
         `• Activate Card - Create your account\n` +
@@ -251,7 +257,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- ABOUT --------------------------- */
     if (userIntent === "about") {
-      await sendMessage(from,
+      await sendMessageWithButtons(from,
         `*About Toki Card* 💳\n\n` +
         `Toki Card is your virtual USD card for seamless global payments.\n\n` +
         `✅ Fund with crypto (USDT, BTC)\n` +
@@ -266,7 +272,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- FEATURES --------------------------- */
     if (userIntent === "features") {
-      await sendMessage(from,
+      await sendMessageWithButtons(from,
         `✨ *Toki Card Features*\n\n` +
         `🌍 Global Acceptance\n` +
         `💸 Low Fees\n` +
@@ -282,14 +288,14 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- ACKNOWLEDGE --------------------------- */
     if (userIntent === "acknowledge") {
-      await sendMessage(from, "Great! 👍 Type *help* if you need anything else.", [
+      await sendMessageWithButtons(from, "Great! 👍 Type *help* if you need anything else.", [
         { label: "Help" }
       ]);
       return res.sendStatus(200);
     }
 
     /* ------------------------------ DEFAULT ------------------------------ */
-    await sendMessage(from, 
+    await sendMessageWithButtons(from, 
       `🤔 I didn't understand that.\n\n` +
       `Type *help* to see what I can do, or click a button below.`, 
       [{ label: "Help" }, { label: "Activate Card" }, { label: "Fund" }]
