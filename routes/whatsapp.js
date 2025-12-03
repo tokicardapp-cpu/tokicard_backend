@@ -1,7 +1,8 @@
-// routes/whatsapp.js → UPDATED WITH SIMPLE CTA URL BUTTON
+// routes/whatsapp.js → UPDATED WITH FUNDING HANDLERS
 import express from "express";
 import axios from "axios";
 import { sendMessage, sendMessageWithButtons } from "../utils/sendMessage.js";
+import { getDb } from "../db/mongo.js";
 const router = express.Router();
 
 const API_BASE = "https://tokicard-api.onrender.com/auth";
@@ -71,7 +72,10 @@ router.post("/", async (req, res) => {
       fiat: ["fiat", "bank transfer"],
       card: ["show card", "card details", "show card details", "my card", "virtual card", "card info", "show my card", "view card", "see card", "card number"],
       acknowledge: ["ok", "okay", "cool", "thanks", "thank you", "got it"],
-      followup: ["what next", "continue", "next", "then", "what now"]
+      followup: ["what next", "continue", "next", "then", "what now"],
+      // ✅ NEW: Funding intents
+      cryptoFund: ["fund with crypto", "crypto funding", "stablecoin"],
+      bankFund: ["bank transfer (ngn)", "fund with bank", "ngn funding"]
     };
 
     // Check for exact matches first (for buttons)
@@ -145,9 +149,8 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    /* --------------------------- ACTIVATE CARD (REGISTER) - WITH CTA URL BUTTON --------------------------- */
+    /* --------------------------- ACTIVATE CARD (REGISTER) --------------------------- */
     if (userIntent === "register") {
-      // Send message with "Activate Card" button that opens your website
       const activationUrl = `https://tokicard-onboardingform.onrender.com/emailform`;
       await sendMessage(
         from,
@@ -157,7 +160,7 @@ router.post("/", async (req, res) => {
         `✅ Instant card creation\n\n` +
         `Click below to activate your card now! 👇`,
         activationUrl,
-        "Activate Card" // Button text
+        "Activate Card"
       );
       return res.sendStatus(200);
     }
@@ -169,7 +172,7 @@ router.post("/", async (req, res) => {
         from,
         `📋 *Complete your KYC verification*\n\nThis is required before you can fund your card.`,
         kycUrl,
-        "Start KYC" // Button text
+        "Start KYC"
       );
       return res.sendStatus(200);
     }
@@ -194,26 +197,72 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    /* --------------------------- CRYPTO --------------------------- */
-    if (userIntent === "crypto") {
-      await sendMessageWithButtons(from, 
-        `₿ *Crypto Funding*\n\n` +
+    /* --------------------------- CRYPTO FUNDING (UPDATED) --------------------------- */
+    if (userIntent === "crypto" || userIntent === "cryptoFund") {
+      const cryptoUrl = `https://tokicard-onboardingform.onrender.com/crypto-deposit?phone=${from}`;
+      await sendMessage(
+        from,
+        `🪙 *Crypto Funding*\n\n` +
         `We support:\n` +
-        `• USDT (TRC20)\n` +
-        `• Bitcoin (BTC)\n\n` +
-        `Deposits are processed instantly!`, 
-        [{ label: "Fund" }, { label: "Help" }]
+        `• USDT (TRC20) - Min: $10\n` +
+        `• USDC - Min: $10\n` +
+        `• CTNG - Min: $5\n\n` +
+        `💡 Deposits are processed *instantly*!`,
+        cryptoUrl,
+        "Start Crypto Deposit"
       );
       return res.sendStatus(200);
     }
 
-    /* --------------------------- FIAT --------------------------- */
-    if (userIntent === "fiat") {
-      await sendMessageWithButtons(from, 
-        `🏦 *Bank Transfer*\n\n` +
-        `Bank transfer funding is coming soon. Stay tuned!\n\n` +
-        `In the meantime, you can fund with crypto.`, 
-        [{ label: "Crypto" }, { label: "Help" }]
+    /* --------------------------- BANK FUNDING (UPDATED) --------------------------- */
+    if (userIntent === "fiat" || userIntent === "bankFund") {
+      if (!user) {
+        await sendMessageWithButtons(from, "Please *activate your card first* before funding.", [
+          { label: "Activate Card" }
+        ]);
+        return res.sendStatus(200);
+      }
+
+      // Get or generate virtual account
+      let account = user.virtualAccount;
+      
+      if (!account) {
+        account = {
+          bankName: "Providus Bank",
+          accountNumber: "98" + Math.floor(10000000 + Math.random() * 90000000),
+          accountName: `TOKI-${user.firstName} ${user.lastName}`,
+          rate: 1520
+        };
+        
+        // Save to database
+        const db = getDb();
+        await db.collection("users").updateOne(
+          { email: from },
+          { $set: { virtualAccount: account } }
+        );
+      }
+
+      await sendMessage(
+        from,
+        `🏦 *Your Personal Bank Account*\n\n` +
+        `*Bank:* ${account.bankName}\n` +
+        `*Account Number:* ${account.accountNumber}\n` +
+        `*Account Name:* ${account.accountName}\n\n` +
+        `📌 *How to fund:*\n` +
+        `1. Transfer NGN to the account above\n` +
+        `2. Funds convert automatically to USD\n` +
+        `3. Card gets funded within minutes\n\n` +
+        `💡 *Current Rate:* ₦${account.rate}/$1\n\n` +
+        `_These are your permanent details. Save them!_`
+      );
+
+      await sendMessageWithButtons(
+        from,
+        "Need help?",
+        [
+          { label: "Check Balance" },
+          { label: "Help" }
+        ]
       );
       return res.sendStatus(200);
     }

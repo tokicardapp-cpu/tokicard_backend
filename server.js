@@ -3,18 +3,25 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import whatsappRoutes from "./routes/whatsapp.js";
 import webhookRoutes from "./routes/webhooks.js";
+import { startStatusChecker } from "./services/statusChecker.js"; // ✅ NEW
 
 dotenv.config();
-const app = express();
 
+const app = express();
 app.use(bodyParser.json());
 app.use("/whatsapp", whatsappRoutes);
 app.use("/webhooks", webhookRoutes);
 
-// 👇 Test route
+// Test route
 app.get("/", (req, res) => {
   res.send("✅ Toki bot server is working!");
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Toki bot running on port ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`🚀 Toki bot running on port ${PORT}`);
+  
+  // ✅ START BACKGROUND CHECKER (checks every 30 seconds)
+  startStatusChecker(30);
+});
