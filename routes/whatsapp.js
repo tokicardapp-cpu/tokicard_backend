@@ -8,7 +8,6 @@ const router = express.Router();
 const API_BASE = "https://tokicard-api.onrender.com/auth";
 const WEBAPP = "https://tokicard-onboardingform.onrender.com";
 
-
 /* ---------------------- META WEBHOOK VERIFICATION --------------------- */
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
@@ -152,7 +151,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- ACTIVATE CARD (REGISTER) --------------------------- */
     if (userIntent === "register") {
-      const activationUrl = `https://tokicard-onboardingform.onrender.com`;
+      const activationUrl = `https://tokicard-onboardingform.onrender.com?phone=${from}`;
       await sendMessage(
         from,
         `🎉 *Welcome to Toki Card!*\n\nYour virtual USD card for seamless global payments.\n\n` +
@@ -168,7 +167,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- KYC --------------------------- */
     if (userIntent === "kyc") {
-      const kycUrl = `https://tokicard-onboardingform.onrender.com`;
+      const kycUrl = `https://tokicard-onboardingform.onrender.com?phone=${from}`;
       await sendMessage(
         from,
         `📋 *Complete your KYC verification*\n\nThis is required before you can fund your card.`,
@@ -200,7 +199,7 @@ router.post("/", async (req, res) => {
 
     /* --------------------------- CRYPTO FUNDING (UPDATED) --------------------------- */
     if (userIntent === "crypto" || userIntent === "cryptoFund") {
-      const cryptoUrl = `https://tokicard-onboardingform.onrender.com?phone=${from}`;
+      const cryptoUrl = `https://tokicard-onboardingform.onrender.com/crypto-deposit?phone=${from}`;
       await sendMessage(
         from,
         `🪙 *Crypto Funding*\n\n` +
