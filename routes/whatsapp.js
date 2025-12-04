@@ -115,7 +115,7 @@ router.post("/", async (req, res) => {
 
     /* ------------------------------ GREETING ------------------------------ */
     if (!isButton && !userIntent && /^(hi|hello|hey|greetings|good morning|good evening)$/i.test(text)) {
-      await sendMessageWithButtons(from, "Welcome to *Toki Card*! 👋\n\nWhat would you like to do?", [
+      await sendMessageWithButtons(from, "Welcome to *Tokicard*! 👋\n\nWhat would you like to do?", [
         { label: "Activate Card" }, { label: "Fund" }, { label: "Help" }
       ]);
       return res.sendStatus(200);
@@ -154,7 +154,7 @@ router.post("/", async (req, res) => {
       const activationUrl = `https://tokicard-onboardingform.onrender.com?phone=${from}`;
       await sendMessage(
         from,
-        `🎉 *Welcome to Toki Card!*\n\nYour virtual USD card for seamless global payments.\n\n` +
+        `🎉 *Welcome to Tokicard!*\n\nYour virtual USD card for seamless global payments.\n\n` +
         `✅ Fund with crypto (USDT, BTC)\n` +
         `✅ Spend anywhere online\n` +
         `✅ Instant card creation\n\n` +
@@ -287,7 +287,7 @@ router.post("/", async (req, res) => {
     /* --------------------------- HELP --------------------------- */
     if (userIntent === "help") {
       await sendMessageWithButtons(from, 
-        `🤖 *Toki Card Bot - Commands*\n\n` +
+        `🤖 *Tokicard Bot - Commands*\n\n` +
         `*Getting Started:*\n` +
         `• Activate Card - Create your account\n` +
         `• KYC - Verify your identity\n\n` +
@@ -296,7 +296,7 @@ router.post("/", async (req, res) => {
         `• Balance - Check your balance\n` +
         `• Show Card - View card details\n\n` +
         `*Information:*\n` +
-        `• About - Learn about Toki Card\n` +
+        `• About - Learn about Tokicard\n` +
         `• Features - See what we offer\n\n` +
         `Just type any command or click a button!`,
         [{ label: "Activate Card" }, { label: "About" }]
@@ -307,8 +307,8 @@ router.post("/", async (req, res) => {
     /* --------------------------- ABOUT --------------------------- */
     if (userIntent === "about") {
       await sendMessageWithButtons(from,
-        `*About Toki Card* 💳\n\n` +
-        `Toki Card is your virtual USD card for seamless global payments.\n\n` +
+        `*About Tokicard* 💳\n\n` +
+        `TokiCard is your virtual USD card for seamless global payments.\n\n` +
         `✅ Fund with crypto (USDT, BTC)\n` +
         `✅ Spend anywhere online\n` +
         `✅ Instant card creation\n` +
@@ -322,7 +322,7 @@ router.post("/", async (req, res) => {
     /* --------------------------- FEATURES --------------------------- */
     if (userIntent === "features") {
       await sendMessageWithButtons(from,
-        `✨ *Toki Card Features*\n\n` +
+        `✨ *Tokicard Features*\n\n` +
         `🌍 Global Acceptance\n` +
         `💸 Low Fees\n` +
         `⚡ Instant Deposits\n` +
